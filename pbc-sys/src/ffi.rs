@@ -1,64 +1,5 @@
-pub type __int64_t = ::std::os::raw::c_longlong;
-pub type __darwin_size_t = ::std::os::raw::c_ulong;
-pub type __darwin_off_t = __int64_t;
-pub type fpos_t = __darwin_off_t;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct __sbuf {
-    pub _base: *mut ::std::os::raw::c_uchar,
-    pub _size: ::std::os::raw::c_int,
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct __sFILEX {
-    _unused: [u8; 0],
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct __sFILE {
-    pub _p: *mut ::std::os::raw::c_uchar,
-    pub _r: ::std::os::raw::c_int,
-    pub _w: ::std::os::raw::c_int,
-    pub _flags: ::std::os::raw::c_short,
-    pub _file: ::std::os::raw::c_short,
-    pub _bf: __sbuf,
-    pub _lbfsize: ::std::os::raw::c_int,
-    pub _cookie: *mut ::std::os::raw::c_void,
-    pub _close: ::std::option::Option<
-        unsafe extern "C" fn(arg1: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int,
-    >,
-    pub _read: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: *mut ::std::os::raw::c_void,
-            arg2: *mut ::std::os::raw::c_char,
-            arg3: ::std::os::raw::c_int,
-        ) -> ::std::os::raw::c_int,
-    >,
-    pub _seek: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: *mut ::std::os::raw::c_void,
-            arg2: fpos_t,
-            arg3: ::std::os::raw::c_int,
-        ) -> fpos_t,
-    >,
-    pub _write: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: *mut ::std::os::raw::c_void,
-            arg2: *const ::std::os::raw::c_char,
-            arg3: ::std::os::raw::c_int,
-        ) -> ::std::os::raw::c_int,
-    >,
-    pub _ub: __sbuf,
-    pub _extra: *mut __sFILEX,
-    pub _ur: ::std::os::raw::c_int,
-    pub _ubuf: [::std::os::raw::c_uchar; 3usize],
-    pub _nbuf: [::std::os::raw::c_uchar; 1usize],
-    pub _lb: __sbuf,
-    pub _blksize: ::std::os::raw::c_int,
-    pub _offset: fpos_t,
-}
-
+// hide inner FILE
+pub type __sFILE = ::std::os::raw::c_void;
 pub type FILE = __sFILE;
 pub type mp_limb_t = ::std::os::raw::c_ulong;
 #[repr(C)]
@@ -90,7 +31,7 @@ pub struct element_pp_s {
     pub data: *mut ::std::os::raw::c_void,
 }
 
-pub type element_pp_t = [element_pp_s; 1usize];
+pub type element_pp_t = element_pp_s;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct multiz_s {
@@ -157,7 +98,8 @@ pub struct field_s {
     pub div: ::std::option::Option<
         unsafe extern "C" fn(arg1: element_ptr, arg2: const_element_ptr, arg3: const_element_ptr),
     >,
-    pub doub: ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: element_ptr)>,
+    pub doub:
+        ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: const_element_ptr)>,
     pub multi_doub: ::std::option::Option<
         unsafe extern "C" fn(
             arg1: *mut element_ptr,
@@ -173,14 +115,19 @@ pub struct field_s {
             n: ::std::os::raw::c_int,
         ),
     >,
-    pub halve: ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: element_ptr)>,
-    pub square: ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: element_ptr)>,
-    pub cubic: ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: element_ptr)>,
+    pub halve:
+        ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: const_element_ptr)>,
+    pub square:
+        ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: const_element_ptr)>,
+    pub cubic:
+        ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: const_element_ptr)>,
     pub pow_mpz: ::std::option::Option<
         unsafe extern "C" fn(arg1: element_ptr, arg2: const_element_ptr, arg3: const_mpz_ptr),
     >,
-    pub invert: ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: element_ptr)>,
-    pub neg: ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: element_ptr)>,
+    pub invert:
+        ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: const_element_ptr)>,
+    pub neg:
+        ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr, arg2: const_element_ptr)>,
     pub random: ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr)>,
     pub from_hash: ::std::option::Option<
         unsafe extern "C" fn(
@@ -189,8 +136,9 @@ pub struct field_s {
             len: ::std::os::raw::c_int,
         ),
     >,
-    pub is1:
-        ::std::option::Option<unsafe extern "C" fn(arg1: element_ptr) -> ::std::os::raw::c_int>,
+    pub is1: ::std::option::Option<
+        unsafe extern "C" fn(arg1: const_element_ptr) -> ::std::os::raw::c_int,
+    >,
     pub is0: ::std::option::Option<
         unsafe extern "C" fn(arg1: const_element_ptr) -> ::std::os::raw::c_int,
     >,
@@ -241,14 +189,14 @@ pub struct field_s {
 }
 
 pub type field_ptr = *mut field_s;
-pub type field_t = [field_s; 1usize];
+pub type field_t = field_s;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct pairing_pp_s {
     pub pairing: *mut pairing_s,
     pub data: *mut ::std::os::raw::c_void,
 }
-pub type pairing_pp_t = [pairing_pp_s; 1usize];
+pub type pairing_pp_t = pairing_pp_s;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct pairing_s {

@@ -51,11 +51,11 @@ pub unsafe fn element_init_G2(e: &mut element_t, pairing: &pairing_t) {
 }
 
 pub unsafe fn element_init_GT(e: &mut element_t, pairing: &pairing_t) {
-    element_init(e, &pairing.GT[0]);
+    element_init(e, &pairing.GT);
 }
 
 pub unsafe fn element_init_Zr(e: &mut element_t, pairing: &pairing_t) {
-    element_init(e, &pairing.Zr[0]);
+    element_init(e, &pairing.Zr);
 }
 
 /// Initialize e to be an element of the algebraic structure that e2 lies in.
@@ -114,6 +114,38 @@ pub unsafe fn element_mul(n: &mut element_t, a: &element_t, b: &element_t) {
     (*n.field).mul.as_ref().unwrap()(n, a, b)
 }
 
+pub unsafe fn element_div(n: &mut element_t, a: &element_t, b: &element_t) {
+    // PBC_ASSERT_MATCH3(n, a, b);
+    (*n.field).div.as_ref().unwrap()(n, a, b)
+}
+
+pub unsafe fn element_double(n: &mut element_t, a: &element_t) {
+    // PBC_ASSERT_MATCH2(n, a);
+    (*n.field).doub.as_ref().unwrap()(n, a)
+}
+
+pub unsafe fn element_halve(n: &mut element_t, a: &element_t) {
+    // PBC_ASSERT_MATCH2(n, a);
+    (*n.field).halve.as_ref().unwrap()(n, a)
+}
+
+pub unsafe fn element_square(n: &mut element_t, a: &element_t) {
+    // PBC_ASSERT_MATCH2(n, a);
+    (*n.field).square.as_ref().unwrap()(n, a)
+}
+
+pub unsafe fn element_neg(n: &mut element_t, a: &element_t) {
+    // PBC_ASSERT_MATCH2(n, a);
+    (*n.field).neg.as_ref().unwrap()(n, a)
+}
+
+pub unsafe fn element_invert(n: &mut element_t, a: &element_t) {
+    // PBC_ASSERT_MATCH2(n, a);
+    (*n.field).invert.as_ref().unwrap()(n, a)
+}
+
+// Exponentiating elements
+
 pub unsafe fn element_pow_mpz(x: &mut element_t, a: &element_t, n: &mpz_t) {
     // PBC_ASSERT_MATCH2(x, a)
     (*x.field).pow_mpz.as_ref().unwrap()(x, a, n);
@@ -130,15 +162,28 @@ pub unsafe fn element_pow_zn(x: &mut element_t, a: &element_t, n: &element_t) {
     __gmpz_clear(&mut z);
 }
 
-pub unsafe fn element_div(n: &mut element_t, a: &element_t, b: &element_t) {
-    // PBC_ASSERT_MATCH3(n, a, b);
-    (*n.field).div.as_ref().unwrap()(n, a, b)
+// Comparing elements
+
+pub unsafe fn element_is0(e: &element_t) -> bool {
+    (*e.field).is0.as_ref().unwrap()(e) != 0
+}
+
+pub unsafe fn element_is1(e: &element_t) -> bool {
+    (*e.field).is1.as_ref().unwrap()(e) != 0
 }
 
 pub unsafe fn element_cmp(a: &element_t, b: &element_t) -> i32 {
     // PBC_ASSERT_MATCH2(a, b)
     (*a.field).cmp.as_ref().unwrap()(a, b)
 }
+
+// Random elements
+
+pub unsafe fn element_random(e: &mut element_t) {
+    (*e.field).random.as_ref().unwrap()(e)
+}
+
+// Element import/export
 
 pub unsafe fn element_length_in_bytes(e: &element_t) -> i32 {
     if (*e.field).fixed_length_in_bytes < 0 {
@@ -156,13 +201,6 @@ pub unsafe fn element_to_bytes(e: &element_t) -> Vec<u8> {
     buf
 }
 
-pub unsafe fn element_random(e: &mut element_t) {
-    (*e.field).random.as_ref().unwrap()(e)
-}
-
-pub unsafe fn element_is0(e: &element_t) -> bool {
-    (*e.field).is0.as_ref().unwrap()(e) != 0
-}
 
 pub unsafe fn pairing_apply(
     out: &mut element_t,
@@ -171,7 +209,7 @@ pub unsafe fn pairing_apply(
     pairing: &pairing_t,
 ) {
     assert_eq!(
-        &pairing.GT[0] as *const _, out.field,
+        &pairing.GT as *const _, out.field,
         "pairing output mismatch"
     );
     assert_eq!(
