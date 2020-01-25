@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 use std::mem;
-use std::os::raw::{c_char, c_int};
+use std::os::raw::c_int;
 
-use ffi::mpz_t;
+pub use ffi::mpz_t;
 pub use ffi::{element_t, field_s, pairing_t};
 
 #[allow(dead_code, non_camel_case_types, unused_imports, non_snake_case)]
@@ -11,45 +11,112 @@ mod ffi;
 #[link(name = "pbc")]
 extern "C" {
     // 0 on success
-    pub fn pairing_init_set_buf(pairing: &mut pairing_t, input: *const c_char, len: usize)
-        -> c_int;
+    pub fn pairing_init_set_buf(pairing: &mut pairing_t, input: *const u8, len: usize) -> c_int;
+
+    pub fn pairing_clear(pairing: &mut pairing_t);
+
+    /// Returns the number of bytes needed to hold 'e' in compressed form.
+    /// Currently only implemented for points on an elliptic curve.
+    pub fn element_length_in_bytes_compressed(e: &element_t) -> c_int;
+    /// If possible, outputs a compressed form of the element 'e' to
+    /// the buffer of bytes 'data'.
+    /// Currently only implemented for points on an elliptic curve.
+    pub fn element_to_bytes_compressed(data: *mut u8, e: &element_t) -> c_int;
+
+    /// Sets element 'e' to the element in compressed form in the buffer of bytes 'data'.
+    /// Currently only implemented for points on an elliptic curve.
+    pub fn element_from_bytes_compressed(e: &mut element_t, data: *const u8) -> c_int;
+
 }
+
 #[link(name = "gmp")]
 extern "C" {
     fn __gmpz_init(_: &mut mpz_t);
     fn __gmpz_clear(_: &mut mpz_t);
 }
 
-pub unsafe fn element_init(e: *mut element_t, f: *const field_s) {
-    (*e)[0].field = f;
-    (*f).init.as_ref().unwrap()(&mut (*e)[0]);
+// Initializing elements
+
+unsafe fn element_init(e: &mut element_t, f: *const field_s) {
+    e.field = f;
+    (*f).init.as_ref().unwrap()(e)
 }
 
-pub unsafe fn element_init_G2(e: *mut element_t, pairing: &pairing_t) {
-    element_init(e, pairing[0].G2);
+pub unsafe fn element_init_G1(e: &mut element_t, pairing: &pairing_t) {
+    element_init(e, pairing.G1);
 }
 
-pub unsafe fn element_init_G1(e: *mut element_t, pairing: &pairing_t) {
-    element_init(e, pairing[0].G1);
+pub unsafe fn element_init_G2(e: &mut element_t, pairing: &pairing_t) {
+    element_init(e, pairing.G2);
 }
 
-pub unsafe fn element_init_GT(e: *mut element_t, pairing: &pairing_t) {
-    element_init(e, &pairing[0].GT[0]);
+pub unsafe fn element_init_GT(e: &mut element_t, pairing: &pairing_t) {
+    element_init(e, &pairing.GT[0]);
 }
 
-pub unsafe fn element_init_Zr(e: *mut element_t, pairing: &pairing_t) {
-    element_init(e, &pairing[0].Zr[0]);
+pub unsafe fn element_init_Zr(e: &mut element_t, pairing: &pairing_t) {
+    element_init(e, &pairing.Zr[0]);
 }
+
+/// Initialize e to be an element of the algebraic structure that e2 lies in.
+pub unsafe fn element_init_same_as(e: &mut element_t, e2: &element_t) {
+    element_init(e, e2.field);
+}
+
+pub unsafe fn element_clear(e: &mut element_t) {
+    (*e.field).clear.as_ref().unwrap()(e)
+}
+
+// Assigning elements
+
+pub unsafe fn element_set0(e: &mut element_t) {
+    (*e.field).set0.as_ref().unwrap()(e)
+}
+
+pub unsafe fn element_set1(e: &mut element_t) {
+    (*e.field).set1.as_ref().unwrap()(e)
+}
+
+pub unsafe fn element_set_i64(e: &mut element_t, i: i64) {
+    (*e.field).set_si.as_ref().unwrap()(e, i)
+}
+
+pub unsafe fn element_set(e: &mut element_t, a: &element_t) {
+    (*e.field).set.as_ref().unwrap()(e, a)
+}
+
+// Converting elements
 
 /// Converts 'e' to a GMP integer 'z'
 /// if such an operation makes sense
 pub unsafe fn element_to_mpz(z: &mut mpz_t, e: &element_t) {
-    (*e[0].field).to_mpz.as_ref().unwrap()(&mut z[0], &e[0]);
+    (*e.field).to_mpz.as_ref().unwrap()(z, e);
+}
+
+pub unsafe fn element_from_hash(e: &mut element_t, data: &[u8]) {
+    (*e.field).from_hash.as_ref().unwrap()(e, data.as_ptr() as _, data.len() as _);
+}
+
+// Element arithmetic
+
+pub unsafe fn element_add(n: &mut element_t, a: &element_t, b: &element_t) {
+    // PBC_ASSERT_MATCH3(n, a, b);
+    (*n.field).add.as_ref().unwrap()(n, a, b)
+}
+
+pub unsafe fn element_sub(n: &mut element_t, a: &element_t, b: &element_t) {
+    // PBC_ASSERT_MATCH3(n, a, b);
+    (*n.field).sub.as_ref().unwrap()(n, a, b)
+}
+
+pub unsafe fn element_mul(n: &mut element_t, a: &element_t, b: &element_t) {
+    // PBC_ASSERT_MATCH3(n, a, b);
+    (*n.field).mul.as_ref().unwrap()(n, a, b)
 }
 
 pub unsafe fn element_pow_mpz(x: &mut element_t, a: &element_t, n: &mpz_t) {
     // PBC_ASSERT_MATCH2(x, a)
-    (*x[0].field).pow_mpz.as_ref().unwrap()(&mut x[0], &a[0], &n[0]);
+    (*x.field).pow_mpz.as_ref().unwrap()(x, a, n);
 }
 
 /// Set 'x' = 'a'^'n'^, where 'n' is an element of a ring *Z*~N~
@@ -63,41 +130,38 @@ pub unsafe fn element_pow_zn(x: &mut element_t, a: &element_t, n: &element_t) {
     __gmpz_clear(&mut z);
 }
 
-pub unsafe fn element_from_hash(e: &mut element_t, data: &[u8]) {
-    (*e[0].field).from_hash.as_ref().unwrap()(&mut e[0], data.as_ptr() as _, data.len() as _);
+pub unsafe fn element_div(n: &mut element_t, a: &element_t, b: &element_t) {
+    // PBC_ASSERT_MATCH3(n, a, b);
+    (*n.field).div.as_ref().unwrap()(n, a, b)
 }
 
 pub unsafe fn element_cmp(a: &element_t, b: &element_t) -> i32 {
     // PBC_ASSERT_MATCH2(a, b)
-    (*a[0].field).cmp.as_ref().unwrap()(&a[0], &b[0])
+    (*a.field).cmp.as_ref().unwrap()(a, b)
 }
 
 pub unsafe fn element_length_in_bytes(e: &element_t) -> i32 {
-    if (*e[0].field).fixed_length_in_bytes < 0 {
-        return (*e[0].field).length_in_bytes.as_ref().unwrap()(&e[0]);
+    if (*e.field).fixed_length_in_bytes < 0 {
+        return (*e.field).length_in_bytes.as_ref().unwrap()(e);
     }
-    return (*e[0].field).fixed_length_in_bytes;
+    return (*e.field).fixed_length_in_bytes;
 }
 
 pub unsafe fn element_to_bytes(e: &element_t) -> Vec<u8> {
     let len = element_length_in_bytes(e);
     let mut buf = vec![0u8; len as usize];
     // element_to_bytes
-    let new_len = (*e[0].field).to_bytes.as_ref().unwrap()(&mut buf[0] as *mut u8, &e[0]);
+    let new_len = (*e.field).to_bytes.as_ref().unwrap()(&mut buf[0] as *mut u8, e);
     buf.set_len(new_len as usize);
     buf
 }
 
 pub unsafe fn element_random(e: &mut element_t) {
-    (*e[0].field).random.as_ref().unwrap()(&mut e[0])
+    (*e.field).random.as_ref().unwrap()(e)
 }
 
 pub unsafe fn element_is0(e: &element_t) -> bool {
-    (*e[0].field).is0.as_ref().unwrap()(&e[0]) != 0
-}
-
-pub unsafe fn element_set0(e: &mut element_t) {
-    (*e[0].field).set0.as_ref().unwrap()(&mut e[0])
+    (*e.field).is0.as_ref().unwrap()(e) != 0
 }
 
 pub unsafe fn pairing_apply(
@@ -107,15 +171,15 @@ pub unsafe fn pairing_apply(
     pairing: &pairing_t,
 ) {
     assert_eq!(
-        &pairing[0].GT[0] as *const _, out[0].field,
+        &pairing.GT[0] as *const _, out.field,
         "pairing output mismatch"
     );
     assert_eq!(
-        pairing[0].G1 as *const _, in1[0].field,
+        pairing.G1 as *const _, in1.field,
         "pairing 1st input mismatch"
     );
     assert_eq!(
-        pairing[0].G2 as *const _, in2[0].field,
+        pairing.G2 as *const _, in2.field,
         "pairing 2nd input mismatch"
     );
     if element_is0(in1) || element_is0(in2) {
@@ -125,5 +189,5 @@ pub unsafe fn pairing_apply(
     // TODO: 'out' is an element of a multiplicative subgroup, but the
     // pairing routine expects it to be an element of the full group, hence
     // the 'out->data'. I should make this clearer.
-    pairing[0].map.as_ref().unwrap()(out[0].data as *mut _, &in1[0], &in2[0], &pairing[0]);
+    pairing.map.as_ref().unwrap()(out.data as *mut _, in1, in2, pairing);
 }
