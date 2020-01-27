@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 use hex::ToHex;
-use std::fs::{self};
+use std::fs;
 use std::mem;
 use pbc_sys::*;
 
@@ -22,7 +22,7 @@ pub fn main() {
     unsafe {
         let ret = pairing_init_set_buf(
             &mut pairing,
-            &param.as_bytes()[0] as *const _ as _,
+            param.as_ptr(),
             param.len(),
         );
         println!("ret => {}", ret);
@@ -80,5 +80,12 @@ pub fn main() {
             "temp2 => {:}",
             element_to_bytes(&temp2).encode_hex::<String>()
         );
+
+        println!("len compressed => {}", element_length_in_bytes_compressed(&g));
+        let mut data = vec![0u8; 129];
+        element_to_bytes_compressed(data.as_mut_ptr(), &g);
+        println!("output {}", data.encode_hex::<String>());
+
+        element_clear(&mut g);
     }
 }
