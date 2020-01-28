@@ -90,7 +90,7 @@ pub struct field_s {
         unsafe extern "C" fn(arg1: element_ptr, arg2: element_ptr, arg3: ::std::os::raw::c_ulong),
     >,
     pub mul_mpz: ::std::option::Option<
-        unsafe extern "C" fn(arg1: element_ptr, arg2: element_ptr, arg3: mpz_ptr),
+        unsafe extern "C" fn(arg1: element_ptr, arg2: const_element_ptr, arg3: const_mpz_ptr),
     >,
     pub mul_si: ::std::option::Option<
         unsafe extern "C" fn(arg1: element_ptr, arg2: element_ptr, arg3: ::std::os::raw::c_long),
@@ -170,7 +170,7 @@ pub struct field_s {
         unsafe extern "C" fn(
             s: *mut ::std::os::raw::c_char,
             n: usize,
-            e: element_ptr,
+            e: const_element_ptr,
         ) -> ::std::os::raw::c_int,
     >,
     pub to_mpz: ::std::option::Option<unsafe extern "C" fn(arg1: mpz_ptr, arg2: const_element_ptr)>,

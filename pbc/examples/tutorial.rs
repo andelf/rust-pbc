@@ -2,8 +2,10 @@ use pbc::{Element, Pairing};
 use std::fs;
 
 pub fn main() {
+    // FIXME: i.param segmentation fault
     let param = fs::read_to_string("param/a.param").unwrap();
     let pairing: Pairing = param.parse().unwrap();
+    println!("=> {}", pairing.is_symmetric());
     let mut g = Element::init_g2(&pairing);
     let mut h = Element::init_g1(&pairing);
 
@@ -22,6 +24,8 @@ pub fn main() {
     h.from_hash(b"ABCDEF");
 
     let sig = Element::pow_zn(&h, &secret_key);
+
+    println!("sig => {}", sig);
 
     pairing.apply(&mut temp1, &sig, &g);
     pairing.apply(&mut temp2, &h, &public_key);

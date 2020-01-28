@@ -33,4 +33,8 @@ impl Pairing {
     pub fn apply(&self, out: &mut Element, in1: &Element, in2: &Element) {
         unsafe { pairing_apply(&mut out.inner, &in1.inner, &in2.inner, &self.0) }
     }
+
+    pub fn is_symmetric(&self) -> bool {
+        unsafe { pairing_is_symmetric(&self.0) }
+    }
 }

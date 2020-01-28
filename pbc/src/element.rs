@@ -18,6 +18,16 @@ impl fmt::Debug for Element<'_> {
     }
 }
 
+impl fmt::Display for Element<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut buf = [0u8; 1024];
+        let len = unsafe {
+            element_snprint(buf.as_mut_ptr(), 1024, &self.inner) as usize
+        };
+        write!(f, "{}", String::from_utf8_lossy(&buf[..len]))
+    }
+}
+
 impl Drop for Element<'_> {
     fn drop(&mut self) {
         unsafe { element_clear(&mut self.inner) }
@@ -35,8 +45,8 @@ impl PartialOrd for Element<'_> {
         let cmp = unsafe { element_cmp(&self.inner, &other.inner) };
         match cmp {
             0 => Some(cmp::Ordering::Equal),
-            -1 => Some(cmp::Ordering::Less),
             1 => Some(cmp::Ordering::Greater),
+            -1 => Some(cmp::Ordering::Less),
             _ => unreachable!(),
         }
     }
@@ -88,7 +98,21 @@ impl<'a> Element<'a> {
         x
     }
 
+    pub fn mul_zn<'b: 'a>(a: &'b Element, z: &'b Element) -> Self {
+        let mut c = Element::init_same_as(a);
+        unsafe {
+            element_mul_zn(&mut c.inner, &a.inner, &z.inner);
+        }
+        c
+    }
+
     pub fn from_hash(&mut self, data: &[u8]) {
         unsafe { element_from_hash(&mut self.inner, data) }
+    }
+
+    pub fn pairing<'b: 'a>(in1: &'b Element, in2: &'b Element) -> Self {
+        let mut out = Element::init_gt(&in1.pairing);
+        out.pairing.apply(&mut out, in1, in2);
+        out
     }
 }

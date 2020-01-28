@@ -114,6 +114,24 @@ pub unsafe fn element_mul(n: &mut element_t, a: &element_t, b: &element_t) {
     (*n.field).mul.as_ref().unwrap()(n, a, b)
 }
 
+pub unsafe fn element_mul_mpz(n: &mut element_t, a: &element_t, z: &mpz_t) {
+    // PBC_ASSERT_MATCH2(n, a);
+    (*n.field).mul_mpz.as_ref().unwrap()(n, a, z)
+}
+
+/// 'z' must be an element of a integer mod ring (i.e. *Z*~n~ for some n).
+/// Set 'c' = 'a' 'z', that is 'a' + 'a' + ... + 'a'
+/// where there are 'z' 'a''s.
+pub unsafe fn element_mul_zn(c: &mut element_t, a: &element_t, z: &element_t) {
+    let mut z0: mpz_t = mem::zeroed();
+    // PBC_ASSERT_MATCH2(c, a);
+    // TODO: check z->field is Zn
+    __gmpz_init(&mut z0);
+    element_to_mpz(&mut z0, z);
+    element_mul_mpz(c, a, &z0);
+    __gmpz_clear(&mut z0);
+}
+
 pub unsafe fn element_div(n: &mut element_t, a: &element_t, b: &element_t) {
     // PBC_ASSERT_MATCH3(n, a, b);
     (*n.field).div.as_ref().unwrap()(n, a, b)
@@ -185,6 +203,10 @@ pub unsafe fn element_random(e: &mut element_t) {
 
 // Element import/export
 
+pub unsafe fn element_snprint(s: *mut u8, n: usize, e: &element_t) -> c_int {
+    (*e.field).snprint.as_ref().unwrap()(s as _, n, e)
+}
+
 pub unsafe fn element_length_in_bytes(e: &element_t) -> i32 {
     if (*e.field).fixed_length_in_bytes < 0 {
         return (*e.field).length_in_bytes.as_ref().unwrap()(e);
@@ -201,6 +223,7 @@ pub unsafe fn element_to_bytes(e: &element_t) -> Vec<u8> {
     buf
 }
 
+// pairing_apply
 
 pub unsafe fn pairing_apply(
     out: &mut element_t,
@@ -228,4 +251,9 @@ pub unsafe fn pairing_apply(
     // pairing routine expects it to be an element of the full group, hence
     // the 'out->data'. I should make this clearer.
     pairing.map.as_ref().unwrap()(out.data as *mut _, in1, in2, pairing);
+}
+
+// pairing_op
+pub unsafe fn pairing_is_symmetric(pairing: &pairing_t) -> bool {
+    return pairing.G1 == pairing.G2
 }
