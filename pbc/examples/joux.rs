@@ -9,31 +9,25 @@ pub fn main() {
         panic!("pairing must be symmetric");
     }
 
-    let mut P = Element::init_g1(&pairing);
+    let mut p = Element::init_g1(&pairing);
 
     let mut a = Element::init_zr(&pairing);
     let mut b = Element::init_zr(&pairing);
     let mut c = Element::init_zr(&pairing);
 
-    let mut t5 = Element::init_gt(&pairing);
-    let mut t6 = Element::init_gt(&pairing);
-    let mut Ka = Element::init_gt(&pairing);
-    let mut Kb = Element::init_gt(&pairing);
-    let mut Kc = Element::init_gt(&pairing);
-
     println!("Joux key agreement between A, B and C.");
-    P.random();
+    p.random();
     a.random();
     b.random();
     c.random();
 
-    let t1 = Element::mul_zn(&P, &a);
+    let t1 = Element::mul_zn(&p, &a);
     println!("A sends B and C: aP\naP = {}", t1);
 
-    let t2 = Element::mul_zn(&P, &b);
+    let t2 = Element::mul_zn(&p, &b);
     println!("B sends A and C: bP\nbP = {}", t2);
 
-    let t3 = Element::mul_zn(&P, &c);
+    let t3 = Element::mul_zn(&p, &c);
     println!("C sends A and B: cP\ncP = {}", t3);
 
     // 'out' = 'e'('in1', 'in2'),
