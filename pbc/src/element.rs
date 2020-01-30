@@ -98,6 +98,14 @@ impl<'a> Element<'a> {
         x
     }
 
+    pub fn pow<'b>(&'a self, n: &'b Element) -> Self where 'a: 'b {
+        let mut x = Element::init_same_as(self);
+        unsafe {
+            element_pow_zn(&mut x.inner, &self.inner, &n.inner);
+        }
+        x
+    }
+
     pub fn mul_zn<'b: 'a>(a: &'b Element, z: &'b Element) -> Self {
         let mut c = Element::init_same_as(a);
         unsafe {

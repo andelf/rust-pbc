@@ -37,6 +37,8 @@ pub fn main() {
 
     let t5 = Element::pairing(&t1, &t3);
     let kb = Element::pow_zn(&t5, &b);
+    // FIXME: lifetime hell
+    // let kb = Element::pairing(&t1, &t3).pow(&b);
     println!("Kb = {}", kb);
 
     let t6 = Element::pairing(&t1, &t2);
@@ -44,5 +46,4 @@ pub fn main() {
     println!("Kc = {}", kc);
 
     println!("Shared key K = Ka = Kb = Kc");
-
 }
